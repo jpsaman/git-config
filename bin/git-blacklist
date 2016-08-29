@@ -18,7 +18,7 @@ usage()
 usage: ${me} <option> <upstream> <downstream> <keyword> [<skip-branch>]
 
        ${me} add <upstream> <downstream> <keyword>
-       ${me} remove <upstream> <downstream> <keyword> [<skip-branch>]
+       ${me} remove <upstream> <downstream> <keyword> <skip-branch>
 
 <option> one of:
     add        blacklist all commits that have 'keyword' in their first commit line
@@ -77,9 +77,9 @@ blacklist_remove()
     BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep ${search} | grep ^. | awk -e '{ print $2 }'`
 
     for sha in ${BLACKLIST}; do
-        msg=`git notes --ref=upstreaming show $sha`
+        msg=`git notes --ref=upstreaming show $sha 2>/dev/null`
         if test "${msg}" = "skip: $branch"; then
-            git notes --ref=upstreaming remove $sha
+            git notes --ref=upstreaming remove --ignore-missing $sha
             if ! test $? -eq 0; then
                echo "Fatal: $* failed! Aborting."
                exit 1
