@@ -5,20 +5,20 @@
 # Blacklist a commits based on the first commit line search.
 
 option=$1
-upstream=$2
-downstream=$3
-search=$4
-branch=$5
+upstream=
+downstream=
+search=
+branch=
 
 usage()
 {
     me=`basename $0`
 
     cat <<EOF >&2
-usage: ${me} <option> <upstream> <downstream> <keyword> [<skip-branch>]
+usage: ${me} <option> <upstream> <downstream> [<skip-branch>] <keyword>
 
        ${me} add <upstream> <downstream> <keyword>
-       ${me} remove <upstream> <downstream> <keyword> <skip-branch>
+       ${me} remove <upstream> <downstream> <skip-branch> <keyword>
 
 <option> one of:
     add        blacklist all commits that have 'keyword' in their first commit line
@@ -26,11 +26,11 @@ usage: ${me} <option> <upstream> <downstream> <keyword> [<skip-branch>]
 
 <upstream>:    upstream branch to backport to
 <downstream>:  downstream branch to backport from
-<keyword>:     keyword to match on in the first commit line. The keyword might also be a regular expression
-               that works with grep AND contains no spaces.
 <skip-branch>: skip-branch that should match additionally before removal of blacklist git note.
                NOTE: the script assumes that the match is absolute and will thus fail to remove
                      a blacklist note that has more information in the git note.
+<keyword>:     keyword to match on in the first commit line. The keyword might also be a regular expression
+               that works with grep AND contains no spaces.
 EOF
     exit 1
 }
@@ -39,14 +39,17 @@ parse_opts()
 {
     case "${option}" in
     add)
-        if test $# != 4; then
-           usage
-        fi
+        upstream=$2
+        downstream=$3
+        shift; shift; shift
+        search="$*"
     ;;
     remove)
-        if test $# != 5; then
-            usage
-        fi
+        upstream=$2
+        downstream=$3
+        branch=$4
+        shift; shift; shift; shift
+        search="$*"
     ;;
     *)
         usage
@@ -57,7 +60,7 @@ parse_opts()
 blacklist_add()
 {
     count=0
-    BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep ${search} | grep ^+ | awk -e '{ print $2 }'`
+    BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep "${search}" | grep ^+ | awk -e '{ print $2 }'`
 
     for sha in ${BLACKLIST}; do
         git notes --ref=upstreaming append -m "skip: $upstream" $sha
@@ -74,7 +77,7 @@ blacklist_remove()
 {
     branch=$1
     count=0
-    BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep ${search} | grep ^. | awk -e '{ print $2 }'`
+    BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep "${search}" | grep ^. | awk -e '{ print $2 }'`
 
     for sha in ${BLACKLIST}; do
         msg=`git notes --ref=upstreaming show $sha 2>/dev/null`
