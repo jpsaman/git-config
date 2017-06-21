@@ -17,11 +17,13 @@ usage()
     cat <<EOF >&2
 usage: ${me} <option> <upstream> <downstream> <keyword> [<skip-branch>]
 
-       ${me} add <upstream> <downstream> <keyword>
+       ${me} add    <upstream> <downstream> <keyword>
+       ${me} keep   <upstream> <downstream> <keyword>
        ${me} remove <upstream> <downstream> <keyword> <skip-branch>
 
 <option> one of:
     add        blacklist all commits that have 'keyword' in their first commit line
+    keep       blacklist all commits except the ones that have the 'keyword' in their first commit line
     remove     remove the blacklist note from all commits that have 'keyword' in their first commit line
 
 <upstream>:    upstream branch to backport to
@@ -39,6 +41,11 @@ parse_opts()
 {
     case "${option}" in
     add)
+        if test $# != 4; then
+           usage
+        fi
+    ;;
+    keep)
         if test $# != 4; then
            usage
         fi
@@ -70,6 +77,40 @@ blacklist_add()
     echo Blacklisted $count commits for upstream branch $upstream
 }
 
+in_keeplist()
+{
+    sha1=$1
+
+    for keep in ${KEEPLIST}; do
+       if test "$sha1" = "$keep"; then
+            # Keep this sha
+            return 0
+       fi
+    done
+    # Do not keep this sha
+    return 1
+}
+
+blacklist_keep()
+{
+    count=0
+    KEEPLIST=`git-icing -v3 ${upstream} ${downstream} | grep "${search}" | grep ^+ | awk -e '{ print $2 }'`
+    BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep ^+ | awk -e '{ print $2 }'`
+
+    for sha in ${BLACKLIST}; do
+        in_keeplist $sha
+        if test $? -eq 1; then
+           git notes --ref=upstreaming append -m "skip: $upstream" $sha
+           if ! test $? -eq 0; then
+              echo "Fatal: $* failed! Aborting."
+              exit 1
+           fi
+           count=$(($count+1))
+        fi
+    done
+    echo Blacklisted $count commits for upstream branch $upstream
+}
+
 blacklist_remove()
 {
     branch=$1
@@ -93,11 +134,14 @@ blacklist_remove()
 }
 
 OPTS=$option
+KEEPLIST=
+
 main()
 {
     parse_opts "$@"
     case "${OPTS}" in
     add) blacklist_add ;;
+    keep) blacklist_keep ;;
     remove) blacklist_remove $branch ;;
     esac
 }
