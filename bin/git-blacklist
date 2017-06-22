@@ -52,7 +52,7 @@ parse_opts()
         fi
     ;;
     remove)
-        if test $# != 5; then
+        if test $# != 4 -a $# != 5; then
             usage
         fi
     ;;
@@ -145,7 +145,7 @@ main()
     keep) blacklist_keep ;;
     remove)
         if test -z "$branch"; then
-            $branch=$upstream
+            branch=${upstream}
         fi
         blacklist_remove $branch ;;
     esac
