@@ -131,7 +131,7 @@ blacklist_remove()
             echo Skipped removing note for commit $sha for upstream branch $branch
         fi
     done
-    echo Removed blacklist for $count commit for upstream brach $branch
+    echo Removed blacklist for $count commit for upstream branch $branch
 }
 
 OPTS=$option
