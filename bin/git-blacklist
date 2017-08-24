@@ -119,7 +119,7 @@ blacklist_remove()
     BLACKLIST=`git-icing -v3 ${upstream} ${downstream} | grep "${search}" | grep ^. | awk -e '{ print $2 }'`
 
     for sha in ${BLACKLIST}; do
-        msg=`git notes --ref=upstreaming show $sha 2>/dev/null`
+        msg=`git notes --ref=upstreaming show $sha 2>/dev/null | grep ^"skip: $branch"`
         if test "${msg}" = "skip: $branch"; then
             git notes --ref=upstreaming remove --ignore-missing $sha
             if ! test $? -eq 0; then
