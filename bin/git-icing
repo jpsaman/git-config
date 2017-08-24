@@ -161,7 +161,7 @@ def classify_line(upstream_branch, line)
       elsif note =~ /\bTODO\b/
         # Not upstream but tracked on a TODO list elsewhere
         return '!'
-      elsif note =! /\bskip\b/
+      elsif note =~ /\bskip\b/
         # is not blacklisted for this upstream branch
         return '+'
       else
