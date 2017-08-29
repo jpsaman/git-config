@@ -226,7 +226,7 @@ def needs_work?(status)
   case status
   when '-', '.'
     false
-  when '+', '!', /^.\?$/
+  when '+', '!', '#', /^.\?$/
     true
   else
     raise "unrecognised status '#{status}'"
