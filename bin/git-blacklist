@@ -128,7 +128,18 @@ blacklist_remove()
             fi
             count=$(($count+1))
         else
-            echo Skipped removing note for commit $sha for upstream branch $branch
+            # Also remove 'skip: all' otherwise we will miss some commits that might be needed
+            msg=`git notes --ref=upstreaming show $sha 2>/dev/null | grep ^"skip: all"`
+            if test "${msg}" = "skip: all"; then
+                git notes --ref=upstreaming remove --ignore-missing $sha
+                if ! test $? -eq 0; then
+                   echo "Fatal: $* failed! Aborting."
+                   exit 1
+                fi
+                count=$(($count+1))
+            else
+                echo Skipped removing note for commit $sha for upstream branch $branch
+            fi
         fi
     done
     echo Removed blacklist for $count commit for upstream branch $branch
